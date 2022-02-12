@@ -39,7 +39,19 @@ public class locationserver
 
             StreamWriter sw = new StreamWriter(socketStream);
             StreamReader sr = new StreamReader(socketStream);
-            Console.WriteLine(sr.ReadToEnd());
+            //Console.WriteLine(sr.ReadToEnd());
+
+            string line = sr.ReadLine().Trim();
+            string[] commands = line.Split(" ");
+
+            if (commands.Length == 1)
+            {
+
+            }
+            else if(commands.Length == 2)
+            {
+
+            }
         }
         catch
         {
