@@ -26,6 +26,7 @@ public class locationserver
             {
                 connection = listener.AcceptSocket();
                 socketStream = new NetworkStream(connection);
+                Console.WriteLine("New Connection");
                 doRequest(socketStream, personLocation);
                 socketStream.Close();
                 connection.Close();
