@@ -45,9 +45,8 @@ public class locationserver
             StreamReader sr = new StreamReader(socketStream);
             //Console.WriteLine(sr.ReadToEnd());
 
-            string line = sr.ReadLine().Trim('\"');
-            line = line.Replace("\"","");
-            string[] commands = line.Split(" ");
+            string line = sr.ReadLine().Trim();
+            string[] commands = line.Split("\"");
 
             if (commands.Length == 1)
             {
