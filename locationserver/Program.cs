@@ -47,7 +47,7 @@ public class locationserver
 
             string line = sr.ReadLine().Trim();
             string[] commands = line.Split("\"");
-
+            commands[0] = commands[0].Trim();
             if (commands.Length == 1)
             {
                 if (personLocation.ContainsKey(commands[0]))
