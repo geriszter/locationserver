@@ -59,7 +59,7 @@ public class locationserver
                 }
                 else 
                 {
-                    sw.WriteLine("Error: No data");
+                    sw.WriteLine("ERROR: no entries found");
                     sw.Flush();
                     Console.WriteLine($"\"GET {commands[0]}\" UNKNOWN");
                 }
