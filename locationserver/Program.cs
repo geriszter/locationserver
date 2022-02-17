@@ -48,7 +48,7 @@ public class locationserver
             StreamReader sr = new StreamReader(socketStream);
             //Console.WriteLine(sr.ReadToEnd());
 
-            string line = sr.ReadLine().Trim();
+            string line = sr.ReadLine();
             string[] commands = line.Split(" ");
             commands[0] = commands[0].Trim();
             if (commands.Length == 1)
@@ -69,12 +69,11 @@ public class locationserver
             }
             else if(commands.Length > 1)
             {
-                string locationstring = "";
-                for (int i = 1; i < commands.Length; i++)
+                string locationstring = commands[1];
+                for (int i = 2; i < commands.Length; i++)
                 {
-                    locationstring += commands[i] + " ";
+                    locationstring += " " + commands[i];
                 }
-                locationstring = locationstring.Trim();
                 if (personLocation.ContainsKey(commands[0]))
                 {
                     personLocation[commands[0]] = locationstring;
