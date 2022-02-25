@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 
 public class locationserver
 {
@@ -58,13 +57,13 @@ public class locationserver
                     string location = personLocation[commands[0]];
                     sw.WriteLine(location);
                     sw.Flush();
-                    Console.WriteLine($"\"GET {commands[0]}\" OK");
+                    Console.WriteLine($"[{DateTime.Now}] \"GET {commands[0]}\" OK");
                 }
                 else 
                 {
                     sw.WriteLine("ERROR: no entries found");
                     sw.Flush();
-                    Console.WriteLine($"\"GET {commands[0]}\" UNKNOWN");
+                    Console.WriteLine($"[{DateTime.Now}] \"GET {commands[0]}\" UNKNOWN");
                 }
             }
             else if(commands.Length > 1)
@@ -84,7 +83,7 @@ public class locationserver
                 }
                 sw.WriteLine("OK");
                 sw.Flush();
-                Console.WriteLine($"\"PUT {commands[0]} {locationstring}\" OK");
+                Console.WriteLine($"[{DateTime.Now}] \"PUT {commands[0]} {locationstring}\" OK");
             }
         }
         catch
