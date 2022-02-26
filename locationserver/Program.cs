@@ -127,8 +127,9 @@ public class locationserver
                 else if (commands[0] == "PUT")
                 {
                     name = commands[1].Remove(0, 1);
-                    int iOfLoc = line.IndexOf("\n\n") + 2;
-                    location = line.Remove(0, iOfLoc);
+                    int iOfLoc = name.IndexOf("\n\n") + 2;
+                    location = name.Remove(0, iOfLoc);
+                    name = name.Remove(iOfLoc-2);
                     UpdateAndAdd(name, location, personLocation);
                     response = $"HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                 }
