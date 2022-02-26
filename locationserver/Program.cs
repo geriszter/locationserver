@@ -51,7 +51,7 @@ public class locationserver
             string response = "OK";
 
 
-            string line = sr.ReadLine();
+            string line = sr.ReadToEnd();
             string[] commands = line.Split(" ");
 
             if (commands.Length > 2)
