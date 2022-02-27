@@ -3,9 +3,11 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Collections.Generic;
+using System.Text;
 
 public class locationserver
 {
+    //https://stackoverflow.com/questions/4715896/web-server-reading-http-request-from-stream
     static void Main(string[] args)
     {
         runServer();
@@ -45,75 +47,74 @@ public class locationserver
 
             StreamWriter sw = new StreamWriter(socketStream);
             StreamReader sr = new StreamReader(socketStream);
-            //Console.WriteLine(sr.ReadToEnd());
             string name = null;
             string location = null;
-            string response = "OK";
+            string response = null;
 
 
-            string line = sr.ReadLine();
-            string[] commands = line.Split(" ");
+            string line = "";
 
-            if (commands.Length > 2)
+            byte[] myReadBuffer = new byte[1024];
+            int numberOfBytesRead = 0;
+            StringBuilder myCompleteMessage = new StringBuilder();
+            do
             {
-                //h0 HTTP/1.0
-                if (commands[0] == "GET" && commands[2] == "HTTP/1.0")
-                {
-                    name = commands[1].Remove(0, 2);
-                    location = GetLocation(name, personLocation);
+                numberOfBytesRead = socketStream.Read(myReadBuffer);
 
-                    if (location != null)
-                    {
-                        response = $"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n{location}\r\n";
-                    }
-                    else
-                    {
-                        response = "HTTP/1.0 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
-                    }
-                }
-                else if (commands[0] == "POST" && commands[2] == "HTTP/1.0")
-                {
-                    name = commands[1].Remove(0, 1);
-                    string[] temp = line.Split("\n");
-                    location = temp[temp.Length - 1];
-                    UpdateAndAdd(name, location, personLocation);
-                    response = "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n";
-                }
-                //h1 HTTP/1.1
-                else if (commands[0] == "GET" && commands[2] == "HTTP/1.1")
-                {
-                    name = commands[1].Remove(0, 7);
-                    location = GetLocation(name, personLocation);
-
-                    if (location != null)
-                    {
-                        response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{location}\r\n";
-                    }
-                    else
-                    {
-                        response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
-                    }
-                }
-                else if (commands[0] == "POST" && commands[2] == ("HTTP/1.1"))
-                {
-                    int nameStartIndex = line.IndexOf("name=") + 5;
-                    int locationStartIndex = line.IndexOf("&location=");
-
-                    name = line.Substring(nameStartIndex + 5); //Substring does not work!!
-                    name = line.Remove(locationStartIndex);
-
-                    location = line.Substring(locationStartIndex + 10);
-                    UpdateAndAdd(name, location, personLocation);
-                    response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
-                }
+                myCompleteMessage.AppendFormat("{0}", Encoding.ASCII.GetString(myReadBuffer, 0, numberOfBytesRead));
             }
-            else 
+            while (socketStream.DataAvailable);
+            
+            line = myCompleteMessage.ToString();
+            //Console.WriteLine(line);
+            string[] commands = line.Split(" ");
+            //GET commands
+            if (commands[0] == "GET")
             {
-                //h9 HTTP/0.9
-                if (commands[0] == "GET")
+                //Console.WriteLine("Get part");
+                if (commands.Length > 2)
                 {
-                    // 5th character is the name start
+
+                    if (commands[2] == "HTTP/1.0")
+                    {
+                        //Console.WriteLine("HTTP/1.0");
+
+                        name = commands[1].Remove(0, 2);
+                        location = GetLocation(name, personLocation);
+
+                        if (location != null)
+                        {
+                            response = $"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n{location}\r\n";
+                        }
+                        else
+                        {
+                            response = "HTTP/1.0 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
+                        }
+                    }
+                    else if (commands[2] == "HTTP/1.1")
+                    {
+                        //Console.WriteLine("HTTP/1.1");
+
+                        name = commands[1].Remove(0, 7);
+                        location = GetLocation(name, personLocation);
+
+                        if (location != null)
+                        {
+                            response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{location}\r\n";
+                        }
+                        else
+                        {
+                            response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
+                        }
+                    }
+                }
+                else
+                {
+                    //Console.WriteLine("NormalGet");
+
+                    //5th character is the name start
                     name = line.Remove(0, 5);
+                    name = name.Remove(name.Length - 2);
                     location = GetLocation(name, personLocation);
                     if (location != null)
                     {
@@ -124,40 +125,76 @@ public class locationserver
                         response = "HTTP/0.9 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
                     }
                 }
-                else if (commands[0] == "PUT")
+            }
+            //PUT HTTP/0.9 
+            else if (commands[0] == "PUT")
+            {
+                string[] array = line.Split("\r\n");
+                name = array[0].Remove(0, 5);
+                location = array[array.Length-2];
+                Console.WriteLine("AddLocation "+location);
+
+                UpdateAndAdd(name, location, personLocation);
+                response = $"HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+            }
+            else if (commands[0] == "POST")
+            {
+                Console.WriteLine("POST");
+
+                if (commands[2].Contains("HTTP/1.0"))
                 {
+                    Console.WriteLine("POST HTTP/1.0");
+
                     name = commands[1].Remove(0, 1);
-                    int iOfLoc = name.IndexOf("\n\n") + 2;
-                    location = name.Remove(0, iOfLoc);
-                    name = name.Remove(iOfLoc-2);
+                    //location = sr.ReadLine();
+                    string[] array = line.Split("\r\n");
+                    location = array[array.Length - 1];
+
                     UpdateAndAdd(name, location, personLocation);
-                    response = $"HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+                    response = "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                 }
-                //whois
+                //"HTTP/1.1"
                 else
                 {
-                    name = commands[0];
-                    if (commands.Length > 1)
-                    {
-                        for (int i = 2; i < commands.Length; i++)
-                        {
-                            location += " " + commands[i];
-                        }
-                    }
-                    else
-                    {
-                        location = GetLocation(name, personLocation);
-                        if (location != null)
-                        {
-                            response = location;
-                        }
-                        else
-                        {
-                            response = "ERROR: no entries found";
-                        }
-                    }
+                    //Console.WriteLine("POST HTTP/1.1");
+
+                    //sr.ReadLine(); //Host
+                    //sr.ReadLine(); //Content-Length
+                    //sr.ReadLine(); //optional
+                    //line = sr.ReadLine();
+
+                    int locationIndex = line.IndexOf("&location=");
+                    name = line.Substring(4, locationIndex);
+                    UpdateAndAdd(name, location, personLocation);
+                    response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                 }
             }
+            else if (commands.Length>2) 
+            {
+                location = GetLocation(name, personLocation);
+                if (location != null)
+                {
+                    response = location;
+                }
+                else
+                {
+                    response = "ERROR: no entries found";
+                }
+            }
+            else
+            {
+                name = commands[0];
+                if (commands.Length > 1)
+                {
+                    for (int i = 2; i < commands.Length; i++)
+                    {
+                        location += " " + commands[i];
+                    }
+                    UpdateAndAdd(name, location, personLocation);
+                    response = "OK";
+                }
+            }
+            
             sw.WriteLine(response);
             sw.Flush();
         }
@@ -192,10 +229,7 @@ public class locationserver
         }
         else
         {
-            //sw.WriteLine("ERROR: no entries found");
-            //sw.Flush();
             Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" UNKNOWN");
-            //return "ERROR: no entries found";
             return null;
         }
     }
