@@ -50,6 +50,7 @@ public class locationserver
             string name = null;
             string location = null;
             string response = null;
+            bool ched = true;
 
 
             string line = "";
@@ -75,10 +76,9 @@ public class locationserver
                 if (commands.Length > 2)
                 {
 
-                    if (commands[2] == "HTTP/1.0")
+                    if (commands[2].Contains("HTTP/1.0"))
                     {
-                        //Console.WriteLine("HTTP/1.0");
-
+                        ched = false;
                         name = commands[1].Remove(0, 2);
                         location = GetLocation(name, personLocation);
 
@@ -91,10 +91,9 @@ public class locationserver
                             response = "HTTP/1.0 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
                         }
                     }
-                    else if (commands[2] == "HTTP/1.1")
+                    else if (commands[2].Contains("HTTP/1.1"))
                     {
-                        //Console.WriteLine("HTTP/1.1");
-
+                        ched = false;
                         name = commands[1].Remove(0, 7);
                         location = GetLocation(name, personLocation);
 
@@ -108,10 +107,10 @@ public class locationserver
                         }
                     }
                 }
-                else
+                //GET HTTP/0.9
+                else if (commands.Length == 2)
                 {
-                    //Console.WriteLine("NormalGet");
-
+                    ched = false;
                     //5th character is the name start
                     name = line.Remove(0, 5);
                     name = name.Remove(name.Length - 2);
@@ -129,6 +128,7 @@ public class locationserver
             //PUT HTTP/0.9 
             else if (commands[0] == "PUT")
             {
+                ched = false;
                 string[] array = line.Split("\r\n");
                 name = array[0].Remove(0, 5);
                 location = array[array.Length-2];
@@ -143,7 +143,7 @@ public class locationserver
 
                 if (commands[2].Contains("HTTP/1.0"))
                 {
-                    Console.WriteLine("POST HTTP/1.0");
+                    ched = false;
 
                     name = commands[1].Remove(0, 1);
                     //location = sr.ReadLine();
@@ -154,10 +154,9 @@ public class locationserver
                     response = "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                 }
                 //"HTTP/1.1"
-                else
+                else if(commands[2].Contains("HTTP/1.1"))
                 {
-                    //Console.WriteLine("POST HTTP/1.1");
-
+                    ched = false;
                     //sr.ReadLine(); //Host
                     //sr.ReadLine(); //Content-Length
                     //sr.ReadLine(); //optional
@@ -169,29 +168,32 @@ public class locationserver
                     response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                 }
             }
-            else if (commands.Length>2) 
-            {
-                location = GetLocation(name, personLocation);
-                if (location != null)
-                {
-                    response = location;
-                }
-                else
-                {
-                    response = "ERROR: no entries found";
-                }
-            }
-            else
+            if(ched)
             {
                 name = commands[0];
                 if (commands.Length > 1)
                 {
+                    location = commands[1];
                     for (int i = 2; i < commands.Length; i++)
                     {
                         location += " " + commands[i];
                     }
+                    location = location.Remove(location.Length-2);
                     UpdateAndAdd(name, location, personLocation);
                     response = "OK";
+                }
+                else
+                {
+                    name = name.Remove(name.Length - 2);
+                    location = GetLocation(name, personLocation);
+                    if (location != null)
+                    {
+                        response = location;
+                    }
+                    else
+                    {
+                        response = "ERROR: no entries found";
+                    }
                 }
             }
             
