@@ -126,13 +126,13 @@ public class locationserver
                 }
             }
             //PUT HTTP/0.9 
-            else if (commands[0] == "PUT")
+            else if (commands[0] == "PUT" && commands[1].Contains("/"))
             {
                 ched = false;
                 string[] array = line.Split("\r\n");
                 name = array[0].Remove(0, 5);
-                location = array[array.Length-2];
-                Console.WriteLine("AddLocation "+location);
+                location = array[array.Length - 2];
+                Console.WriteLine("AddLocation " + location);
 
                 UpdateAndAdd(name, location, personLocation);
                 response = $"HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n";
@@ -154,7 +154,7 @@ public class locationserver
                     response = "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                 }
                 //"HTTP/1.1"
-                else if(commands[2].Contains("HTTP/1.1"))
+                else if (commands[2].Contains("HTTP/1.1"))
                 {
                     ched = false;
                     //sr.ReadLine(); //Host
@@ -168,34 +168,62 @@ public class locationserver
                     response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
                 }
             }
-            if(ched)
+
+            if (commands.Length == 1)
             {
                 name = commands[0];
-                if (commands.Length > 1)
+                name = name.Remove(name.Length - 2);
+                location = GetLocation(name, personLocation);
+                if (location != null)
                 {
-                    location = commands[1];
-                    for (int i = 2; i < commands.Length; i++)
-                    {
-                        location += " " + commands[i];
-                    }
-                    location = location.Remove(location.Length-2);
-                    UpdateAndAdd(name, location, personLocation);
-                    response = "OK";
+                    response = location;
                 }
                 else
                 {
-                    name = name.Remove(name.Length - 2);
-                    location = GetLocation(name, personLocation);
-                    if (location != null)
-                    {
-                        response = location;
-                    }
-                    else
-                    {
-                        response = "ERROR: no entries found";
-                    }
+                    response = "ERROR: no entries found";
                 }
             }
+            else if (commands.Length > 1 && ched)
+            {
+                name = commands[0];
+                location = commands[1];
+                for (int i = 2; i < commands.Length; i++)
+                {
+                    location += " " + commands[i];
+                }
+                location = location.Remove(location.Length - 2);
+                UpdateAndAdd(name, location, personLocation);
+                response = "OK";
+            }
+
+            //if(ched)
+            //{
+            //    name = commands[0];
+            //    if (commands.Length > 1)
+            //    {
+            //        location = commands[1];
+            //        for (int i = 2; i < commands.Length; i++)
+            //        {
+            //            location += " " + commands[i];
+            //        }
+            //        location = location.Remove(location.Length-2);
+            //        UpdateAndAdd(name, location, personLocation);
+            //        response = "OK";
+            //    }
+            //    else
+            //    {
+            //        name = name.Remove(name.Length - 2);
+            //        location = GetLocation(name, personLocation);
+            //        if (location != null)
+            //        {
+            //            response = location;
+            //        }
+            //        else
+            //        {
+            //            response = "ERROR: no entries found";
+            //        }
+            //    }
+            //}
             
             sw.WriteLine(response);
             sw.Flush();
