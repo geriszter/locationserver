@@ -126,7 +126,7 @@ public class locationserver
                 }
             }
             //PUT HTTP/0.9 
-            else if (commands[0] == "PUT" && commands[1].Contains("/"))
+            else if (commands[0] == "PUT" && commands[1].IndexOf("/") == 0 && line.Contains("\r\n\r\n"))
             {
                 ched = false;
                 string[] array = line.Split("\r\n");
@@ -140,32 +140,38 @@ public class locationserver
             else if (commands[0] == "POST")
             {
                 Console.WriteLine("POST");
-
-                if (commands[2].Contains("HTTP/1.0"))
+                if (commands.Length>2)
                 {
-                    ched = false;
+                    if (commands[2].Contains("HTTP/1.0"))
+                    {
+                        ched = false;
 
-                    name = commands[1].Remove(0, 1);
-                    //location = sr.ReadLine();
-                    string[] array = line.Split("\r\n");
-                    location = array[array.Length - 1];
+                        name = commands[1].Remove(0, 1);
+                        //location = sr.ReadLine();
+                        string[] array = line.Split("\r\n");
+                        location = array[array.Length - 1];
 
-                    UpdateAndAdd(name, location, personLocation);
-                    response = "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n";
-                }
-                //"HTTP/1.1"
-                else if (commands[2].Contains("HTTP/1.1"))
-                {
-                    ched = false;
-                    //sr.ReadLine(); //Host
-                    //sr.ReadLine(); //Content-Length
-                    //sr.ReadLine(); //optional
-                    //line = sr.ReadLine();
+                        UpdateAndAdd(name, location, personLocation);
+                        response = "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+                    }
+                    //"HTTP/1.1"
+                    else if (commands[2].Contains("HTTP/1.1"))
+                    {
+                        ched = false;
+                        //sr.ReadLine(); //Host
+                        //sr.ReadLine(); //Content-Length
+                        //sr.ReadLine(); //optional
+                        //line = sr.ReadLine();
 
-                    int locationIndex = line.IndexOf("&location=");
-                    name = line.Substring(4, locationIndex);
-                    UpdateAndAdd(name, location, personLocation);
-                    response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+                        int locationIndex = line.IndexOf("&location=");
+                        int nameIndex = line.IndexOf("name=");
+                        name = line.Remove(locationIndex);
+                        name = name.Remove(0, (5+nameIndex));
+
+                        location = line.Remove(0, (10 + locationIndex));
+                        UpdateAndAdd(name, location, personLocation);
+                        response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+                    }
                 }
             }
 
@@ -237,6 +243,7 @@ public class locationserver
 
     static void UpdateAndAdd(string name, string location, Dictionary<string, string> personLocation) 
     {
+        location = location.Trim(new Char[] { '\"', '\'', '`', '\\', '.' });
         if (personLocation.ContainsKey(name))
         {
             personLocation[name] = location;
