@@ -31,6 +31,7 @@ public class locationserver
                 doRequest(socketStream, personLocation);
                 socketStream.Close();
                 connection.Close();
+                Console.WriteLine("[Disconnected]");
             }
         }
         catch (Exception e)
@@ -42,8 +43,9 @@ public class locationserver
     {
         try
         {
-            //socketStream.ReadTimeout = 1000;
-            //socketStream.WriteTimeout = 1000;
+            int timeOut = 1000;
+            socketStream.ReadTimeout = timeOut;
+            socketStream.WriteTimeout = timeOut;
 
             StreamWriter sw = new StreamWriter(socketStream);
             StreamReader sr = new StreamReader(socketStream);
@@ -54,25 +56,21 @@ public class locationserver
 
 
             string line = "";
-
             byte[] myReadBuffer = new byte[1024];
             int numberOfBytesRead = 0;
             StringBuilder myCompleteMessage = new StringBuilder();
             do
             {
                 numberOfBytesRead = socketStream.Read(myReadBuffer);
-
                 myCompleteMessage.AppendFormat("{0}", Encoding.ASCII.GetString(myReadBuffer, 0, numberOfBytesRead));
             }
             while (socketStream.DataAvailable);
             
             line = myCompleteMessage.ToString();
-            //Console.WriteLine(line);
             string[] commands = line.Split(" ");
             //GET commands
             if (commands[0] == "GET")
             {
-                //Console.WriteLine("Get part");
                 if (commands.Length > 2)
                 {
 
@@ -145,9 +143,7 @@ public class locationserver
                     if (commands[2].Contains("HTTP/1.0"))
                     {
                         ched = false;
-
                         name = commands[1].Remove(0, 1);
-                        //location = sr.ReadLine();
                         string[] array = line.Split("\r\n");
                         location = array[array.Length - 1];
 
@@ -158,11 +154,6 @@ public class locationserver
                     else if (commands[2].Contains("HTTP/1.1"))
                     {
                         ched = false;
-                        //sr.ReadLine(); //Host
-                        //sr.ReadLine(); //Content-Length
-                        //sr.ReadLine(); //optional
-                        //line = sr.ReadLine();
-
                         int locationIndex = line.IndexOf("&location=");
                         int nameIndex = line.IndexOf("name=");
                         name = line.Remove(locationIndex);
@@ -201,35 +192,6 @@ public class locationserver
                 UpdateAndAdd(name, location, personLocation);
                 response = "OK";
             }
-
-            //if(ched)
-            //{
-            //    name = commands[0];
-            //    if (commands.Length > 1)
-            //    {
-            //        location = commands[1];
-            //        for (int i = 2; i < commands.Length; i++)
-            //        {
-            //            location += " " + commands[i];
-            //        }
-            //        location = location.Remove(location.Length-2);
-            //        UpdateAndAdd(name, location, personLocation);
-            //        response = "OK";
-            //    }
-            //    else
-            //    {
-            //        name = name.Remove(name.Length - 2);
-            //        location = GetLocation(name, personLocation);
-            //        if (location != null)
-            //        {
-            //            response = location;
-            //        }
-            //        else
-            //        {
-            //            response = "ERROR: no entries found";
-            //        }
-            //    }
-            //}
             
             sw.WriteLine(response);
             sw.Flush();
