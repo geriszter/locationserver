@@ -28,9 +28,19 @@ public class locationserver
             {
                 connection = listener.AcceptSocket();
                 RequestHandler = new Handler();
-                Thread th = new Thread(() => RequestHandler.doRequest(connection,personLocation));
-                th.Start();
+                //new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
+                //new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
 
+                //https://www.pluralsight.com/guides/how-to-write-your-first-multi-threaded-application-with-c
+                Thread th1 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
+                th1.Start();
+                Thread th2 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
+                th2.Start();
+
+                Thread th3 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
+                th3.Start();
+                Thread th4 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
+                th4.Start();
             }
         }
         catch (Exception e)
@@ -61,8 +71,9 @@ public class locationserver
                 bool ched = true;
 
 
-                string line = "";
-                byte[] myReadBuffer = new byte[3072];
+                string line = null;
+                //byte[] myReadBuffer = new byte[3072];
+                byte[] myReadBuffer = new byte[1048576];
                 int numberOfBytesRead = 0;
                 StringBuilder myCompleteMessage = new StringBuilder();
                 do
@@ -73,6 +84,22 @@ public class locationserver
                 while (socketStream.DataAvailable);
 
                 line = myCompleteMessage.ToString();
+
+                //while (line==null)
+                //{
+                //    try
+                //    {
+                //        int num;
+                //        while ((num = sr.Read()) > 0)
+                //        {
+                //            line += ((char)num);
+                //        }
+                //    }
+                //    catch
+                //    {
+                //    }
+                //}
+
                 string[] commands = line.Split(" ");
                 //GET commands
                 if (commands[0] == "GET")
