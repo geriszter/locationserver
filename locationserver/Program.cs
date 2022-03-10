@@ -8,12 +8,29 @@ using System.Threading;
 
 public class locationserver
 {
-    //https://stackoverflow.com/questions/4715896/web-server-reading-http-request-from-stream
     static void Main(string[] args)
     {
-        runServer();
+        string LogFilePath = null;
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i]== "-l")
+            {
+                LogFilePath = args[i];
+            }
+            switch (args[i])
+            {
+                case "-f":
+                    LogFilePath = args[i];
+                    break;
+                case "-l":
+                    // code block
+                    break;
+            }
+
+        }
+        runServer(LogFilePath);
     }
-    static void runServer()
+    static void runServer(string logPath)
     {
         TcpListener listener;
         Socket connection;
@@ -23,13 +40,14 @@ public class locationserver
             Dictionary<string, string> personLocation = new Dictionary<string, string>();
             listener = new TcpListener(IPAddress.Any, 43);
             listener.Start(); 
+
             Console.WriteLine("Server started");
             while (true)
             {
                 connection = listener.AcceptSocket();
                 RequestHandler = new Handler();
-                new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
-                new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
+                new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath)).Start();
+                //new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath)).Start();
 
             }
         }
@@ -40,8 +58,11 @@ public class locationserver
     }
     class Handler
     {
-        public void doRequest(Socket connection, Dictionary<string, string> personLocation)
+        private static readonly object locker = new object();
+
+        public void doRequest(Socket connection, Dictionary<string, string> personLocation, string LogFilePath)
         {
+
             NetworkStream socketStream;
             socketStream = new NetworkStream(connection);
             string ip = ((IPEndPoint)(connection.RemoteEndPoint)).Address.ToString();
@@ -62,34 +83,31 @@ public class locationserver
 
 
                 string line = null;
-                byte[] myReadBuffer = new byte[1048576];
-                int numberOfBytesRead = 0;
-                StringBuilder myCompleteMessage = new StringBuilder();
-                do
-                {
-                    numberOfBytesRead = socketStream.Read(myReadBuffer);
-                    myCompleteMessage.AppendFormat("{0}", Encoding.ASCII.GetString(myReadBuffer, 0, numberOfBytesRead));
-                }
-                while (socketStream.DataAvailable);
-
-                line = myCompleteMessage.ToString();
-
-                //while (line==null)
+                //byte[] ReadBuffer = new byte[1048576];
+                //int bytesRead = 0;
+                //do
                 //{
-                //    try
-                //    {
-                //        int num;
-                //        while ((num = sr.Read()) > 0)
-                //        {
-                //            line += ((char)num);
-                //        }
-                //    }
-                //    catch
-                //    {
-                //    }
+                //    bytesRead = socketStream.Read(ReadBuffer);
+                //    line += Encoding.ASCII.GetString(ReadBuffer, 0, bytesRead);
                 //}
+                //while (socketStream.DataAvailable);
 
-                string log = $"{ip} - - [{DateTime.Now}]";
+                while (line == null)
+                {
+                    try
+                    {
+                        int num;
+                        while ((num = sr.Read()) > 0)
+                        {
+                            line += ((char)num);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                string log = ip+" - - "+DateTime.Now.ToString("'['dd'/'MM'/'yyyy':'HH':'mm':'ss zz00']'");
                 string[] commands = line.Split(" ");
                 //GET commands
                 if (commands[0] == "GET")
@@ -231,7 +249,15 @@ public class locationserver
                     response = "OK";
                     log += $"\"{name} {location} WHOIS\" OK";
                 }
+
+
                 Console.WriteLine(log);
+                if (LogFilePath !=null)
+                {
+                    WriteLog(log,LogFilePath);
+                }
+
+
                 sw.WriteLine(response);
                 sw.Flush();
             }
@@ -275,6 +301,24 @@ public class locationserver
             {
                 //Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" UNKNOWN");
                 return null;
+            }
+        }
+
+        static void WriteLog(string logMessage,string FilePath) 
+        {
+            lock (locker) 
+            {
+                try
+                {
+                    StreamWriter sw;
+                    sw = File.AppendText(FilePath);
+                    sw.WriteLine(logMessage);
+                    sw.Close();
+                }
+                catch 
+                {
+                    Console.WriteLine("Unable to write the Log message");
+                }
             }
         }
     }
