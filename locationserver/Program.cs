@@ -8,36 +8,38 @@ using System.Threading;
 
 public class locationserver
 {
+    //https://codinginfinite.com/multi-threaded-tcp-server-core-example-csharp/
     static void Main(string[] args)
     {
         string LogFilePath = null;
+        string dbFilePath = null;
         for (int i = 0; i < args.Length; i++)
         {
-            if (args[i]== "-l")
-            {
-                LogFilePath = args[i];
-            }
             switch (args[i])
             {
-                case "-f":
-                    LogFilePath = args[i];
-                    break;
                 case "-l":
-                    // code block
+                    LogFilePath = args[i+1];
+                    break;
+                case "-f":
+                    if (args.Length>= i+1)
+                    {
+                        dbFilePath = args[i+1];
+                    }
                     break;
             }
 
         }
-        runServer(LogFilePath);
+        runServer(LogFilePath, dbFilePath);
     }
-    static void runServer(string logPath)
+    static void runServer(string logPath, string savePath)
     {
         TcpListener listener;
         Socket connection;
         Handler RequestHandler;
+        Dictionary<string, string> personLocation = new Dictionary<string, string>();
+        LoadDb(savePath,personLocation);
         try
         {
-            Dictionary<string, string> personLocation = new Dictionary<string, string>();
             listener = new TcpListener(IPAddress.Any, 43);
             listener.Start(); 
 
@@ -46,9 +48,8 @@ public class locationserver
             {
                 connection = listener.AcceptSocket();
                 RequestHandler = new Handler();
-                new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath)).Start();
-                //new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath)).Start();
-
+                new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath, savePath)).Start();
+                
             }
         }
         catch (Exception e)
@@ -56,11 +57,23 @@ public class locationserver
             Console.WriteLine("Exeption: " + e.ToString());
         }
     }
+
+    static void LoadDb(string path, Dictionary<string, string> db) 
+    {
+        StreamReader sr = new StreamReader(path);
+        while (!sr.EndOfStream)
+        {
+            string line = sr.ReadLine();
+            string[] arr = line.Split(" ");
+            db.Add(arr[0],arr[1]);
+
+        }
+    }
     class Handler
     {
         private static readonly object locker = new object();
 
-        public void doRequest(Socket connection, Dictionary<string, string> personLocation, string LogFilePath)
+        public void doRequest(Socket connection, Dictionary<string, string> personLocation, string LogFilePath, string dblocation)
         {
 
             NetworkStream socketStream;
@@ -73,8 +86,6 @@ public class locationserver
                 int timeOut = 1000;
                 socketStream.ReadTimeout = timeOut;
                 socketStream.WriteTimeout = timeOut;
-
-                StreamWriter sw = new StreamWriter(socketStream);
                 StreamReader sr = new StreamReader(socketStream);
                 string name = null;
                 string location = null;
@@ -250,16 +261,20 @@ public class locationserver
                     log += $"\"{name} {location} WHOIS\" OK";
                 }
 
-
                 Console.WriteLine(log);
-                if (LogFilePath !=null)
+                if (LogFilePath != null)
                 {
-                    WriteLog(log,LogFilePath);
+                    WriteLog(log, LogFilePath);
                 }
 
-
-                sw.WriteLine(response);
-                sw.Flush();
+                lock (locker)
+                {
+                    StreamWriter sw = new StreamWriter(socketStream);
+                    sw.WriteLine(response);
+                    sw.Flush();
+                    if (dblocation !=null) {SaveDictionary(personLocation, dblocation);}
+                }
+                
             }
             catch (Exception e)
             {
@@ -285,7 +300,6 @@ public class locationserver
             {
                 personLocation.Add(name, location);
             }
-            //Console.WriteLine($"[{DateTime.Now}] \"PUT {name} {location}\" OK");
         }
 
         static string GetLocation(string name, Dictionary<string, string> personLocation)
@@ -294,13 +308,32 @@ public class locationserver
             if (personLocation.ContainsKey(name))
             {
                 string location = personLocation[name];
-                //Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" OK");
                 return location;
             }
             else
             {
-                //Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" UNKNOWN");
                 return null;
+            }
+        }
+
+        static void SaveDictionary(Dictionary<string,string> database, string path) 
+        {
+            lock(locker)
+            {
+                try
+                {
+                    StreamWriter sw;
+                    sw = File.AppendText(path);
+                    foreach (var entry in database)
+                    {
+                        sw.WriteLine("[{0} {1}]", entry.Key, entry.Value);
+                    }
+                    sw.Close();
+                }
+                catch
+                {
+                    Console.WriteLine("Unable to save the database");
+                }
             }
         }
 
@@ -322,6 +355,4 @@ public class locationserver
             }
         }
     }
-
 }
-
