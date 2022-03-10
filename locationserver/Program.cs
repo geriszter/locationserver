@@ -37,7 +37,7 @@ public class locationserver
         Socket connection;
         Handler RequestHandler;
         Dictionary<string, string> personLocation = new Dictionary<string, string>();
-        LoadDb(savePath,personLocation);
+        if (savePath!=null){LoadDb(savePath,personLocation);}
         try
         {
             listener = new TcpListener(IPAddress.Any, 43);
