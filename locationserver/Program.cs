@@ -22,25 +22,15 @@ public class locationserver
         {
             Dictionary<string, string> personLocation = new Dictionary<string, string>();
             listener = new TcpListener(IPAddress.Any, 43);
-            listener.Start();
+            listener.Start(); 
             Console.WriteLine("Server started");
             while (true)
             {
                 connection = listener.AcceptSocket();
                 RequestHandler = new Handler();
-                //new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
-                //new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
+                new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
+                new Thread(() => RequestHandler.doRequest(connection,personLocation)).Start();
 
-                //https://www.pluralsight.com/guides/how-to-write-your-first-multi-threaded-application-with-c
-                Thread th1 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
-                th1.Start();
-                Thread th2 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
-                th2.Start();
-
-                Thread th3 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
-                th3.Start();
-                Thread th4 = new Thread(() => RequestHandler.doRequest(connection, personLocation));
-                th4.Start();
             }
         }
         catch (Exception e)
@@ -54,8 +44,8 @@ public class locationserver
         {
             NetworkStream socketStream;
             socketStream = new NetworkStream(connection);
-            Console.WriteLine("New Connection");
-            
+            string ip = ((IPEndPoint)(connection.RemoteEndPoint)).Address.ToString();
+            Console.WriteLine("New Connection "+ip);
             try
             {
 
@@ -72,7 +62,6 @@ public class locationserver
 
 
                 string line = null;
-                //byte[] myReadBuffer = new byte[3072];
                 byte[] myReadBuffer = new byte[1048576];
                 int numberOfBytesRead = 0;
                 StringBuilder myCompleteMessage = new StringBuilder();
@@ -100,13 +89,14 @@ public class locationserver
                 //    }
                 //}
 
+                string log = $"{ip} - - [{DateTime.Now}]";
                 string[] commands = line.Split(" ");
                 //GET commands
                 if (commands[0] == "GET")
                 {
                     if (commands.Length > 2)
                     {
-
+                        //GET HTTP/1.0
                         if (commands[2].Contains("HTTP/1.0"))
                         {
                             ched = false;
@@ -116,12 +106,16 @@ public class locationserver
                             if (location != null)
                             {
                                 response = $"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n{location}\r\n";
+                                log += $" \" GET /{name} HTTP/1.0\" OK";
                             }
                             else
                             {
                                 response = "HTTP/1.0 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
+                                log += $" \" GET /{name} HTTP/1.0\" UNKNOWN";
+
                             }
                         }
+                        //GET HTTP/1.1
                         else if (commands[2].Contains("HTTP/1.1"))
                         {
                             ched = false;
@@ -131,10 +125,12 @@ public class locationserver
                             if (location != null)
                             {
                                 response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{location}\r\n";
+                                log += $" \" GET /name={name} HTTP/1.1\" OK";
                             }
                             else
                             {
                                 response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
+                                log += $" \" GET /name={name} HTTP/1.1\" UNKNOWN";
                             }
                         }
                     }
@@ -149,10 +145,12 @@ public class locationserver
                         if (location != null)
                         {
                             response = $"HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n{location}\r\n";
+                            log += $" \" GET /{name}\" OK";
                         }
                         else
                         {
                             response = "HTTP/0.9 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
+                            log += $" \" GET /{name}\" UNKNOWN";
                         }
                     }
                 }
@@ -164,15 +162,18 @@ public class locationserver
                     name = array[0].Remove(0, 5);
                     location = array[array.Length - 2];
                     Console.WriteLine("AddLocation " + location);
-
                     UpdateAndAdd(name, location, personLocation);
+
                     response = $"HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+                    log += $" \" PUT /{name}\" OK";
+
                 }
                 else if (commands[0] == "POST")
                 {
                     Console.WriteLine("POST");
                     if (commands.Length > 2)
                     {
+                        //"HTTP/1.0"
                         if (commands[2].Contains("HTTP/1.0"))
                         {
                             ched = false;
@@ -182,6 +183,7 @@ public class locationserver
 
                             UpdateAndAdd(name, location, personLocation);
                             response = "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+                            log += $" \" POST /{name} HTTP/1.0\" OK";
                         }
                         //"HTTP/1.1"
                         else if (commands[2].Contains("HTTP/1.1"))
@@ -195,6 +197,7 @@ public class locationserver
                             location = line.Remove(0, (10 + locationIndex));
                             UpdateAndAdd(name, location, personLocation);
                             response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+                            log += $" \" POST /name={name}&location={location}  HTTP/1.1\" OK";
                         }
                     }
                 }
@@ -207,10 +210,12 @@ public class locationserver
                     if (location != null)
                     {
                         response = location;
+                        log += $" \" GET {name}\" OK";
                     }
                     else
                     {
                         response = "ERROR: no entries found";
+                        log += $" \" GET {name}\" UNKNOWN";
                     }
                 }
                 else if (commands.Length > 1 && ched)
@@ -224,8 +229,9 @@ public class locationserver
                     location = location.Remove(location.Length - 2);
                     UpdateAndAdd(name, location, personLocation);
                     response = "OK";
+                    log += $"\"{name} {location} WHOIS\" OK";
                 }
-
+                Console.WriteLine(log);
                 sw.WriteLine(response);
                 sw.Flush();
             }
@@ -253,7 +259,7 @@ public class locationserver
             {
                 personLocation.Add(name, location);
             }
-            Console.WriteLine($"[{DateTime.Now}] \"PUT {name} {location}\" OK");
+            //Console.WriteLine($"[{DateTime.Now}] \"PUT {name} {location}\" OK");
         }
 
         static string GetLocation(string name, Dictionary<string, string> personLocation)
@@ -262,12 +268,12 @@ public class locationserver
             if (personLocation.ContainsKey(name))
             {
                 string location = personLocation[name];
-                Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" OK");
+                //Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" OK");
                 return location;
             }
             else
             {
-                Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" UNKNOWN");
+                //Console.WriteLine($"[{DateTime.Now}] \"GET {name}\" UNKNOWN");
                 return null;
             }
         }
