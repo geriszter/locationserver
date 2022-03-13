@@ -339,7 +339,7 @@ public class locationserver
                     }
                     sw.Close();
                 }
-                catch (Exception e)
+                catch
                 {
                     Console.WriteLine("Unable to save the database");
                 }
