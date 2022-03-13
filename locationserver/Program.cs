@@ -49,7 +49,6 @@ public class locationserver
                 connection = listener.AcceptSocket();
                 RequestHandler = new Handler();
                 new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath, savePath)).Start();
-                
             }
         }
         catch (Exception e)
