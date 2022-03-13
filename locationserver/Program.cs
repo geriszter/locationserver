@@ -59,12 +59,22 @@ public class locationserver
 
     static void LoadDb(string path, Dictionary<string, string> db) 
     {
-        StreamReader sr = new StreamReader(path);
-        while (!sr.EndOfStream)
+        try
         {
-            string line = sr.ReadLine();
-            string[] arr = line.Split(" ");
-            db.Add(arr[0],arr[1]);
+            StreamReader sr = new StreamReader(path);
+            while (!sr.EndOfStream)
+            {
+                string line = sr.ReadLine();
+                string[] arr = line.Split(" ");
+
+                if (db.TryAdd(arr[0], arr[1]) == false)
+                {
+                    db[arr[0]] = arr[1];
+                }
+            }
+        }
+        catch
+        {
 
         }
     }
@@ -325,11 +335,11 @@ public class locationserver
                     sw = File.AppendText(path);
                     foreach (var entry in database)
                     {
-                        sw.WriteLine("[{0} {1}]", entry.Key, entry.Value);
+                        sw.WriteLine("{0} {1}", entry.Key, entry.Value);
                     }
                     sw.Close();
                 }
-                catch
+                catch (Exception e)
                 {
                     Console.WriteLine("Unable to save the database");
                 }
