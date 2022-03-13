@@ -331,8 +331,7 @@ public class locationserver
             {
                 try
                 {
-                    StreamWriter sw;
-                    sw = File.AppendText(path);
+                    StreamWriter sw = new StreamWriter(path);
                     foreach (var entry in database)
                     {
                         sw.WriteLine("{0} {1}", entry.Key, entry.Value);
