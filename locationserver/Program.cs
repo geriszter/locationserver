@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 public class locationserver
@@ -66,11 +65,7 @@ public class locationserver
             {
                 string line = sr.ReadLine();
                 string[] arr = line.Split(" ");
-
-                if (db.TryAdd(arr[0], arr[1]) == false)
-                {
-                    db[arr[0]] = arr[1];
-                }
+                db.Add(arr[0], arr[1]);
             }
         }
         catch
@@ -103,31 +98,35 @@ public class locationserver
 
 
                 string line = null;
-                //byte[] ReadBuffer = new byte[1048576];
-                //int bytesRead = 0;
-                //do
-                //{
-                //    bytesRead = socketStream.Read(ReadBuffer);
-                //    line += Encoding.ASCII.GetString(ReadBuffer, 0, bytesRead);
-                //}
-                //while (socketStream.DataAvailable);
-
-                while (line == null)
+                Byte[] data = new Byte[1048576];
+                Int32 bytes;
+                
+                while (line==null)
                 {
-                    try
+                    bytes = socketStream.Read(data, 0, data.Length);
+                    if (bytes > 0)
                     {
-                        int num;
-                        while ((num = sr.Read()) > 0)
-                        {
-                            line += ((char)num);
-                        }
-                    }
-                    catch
-                    {
+                        line += System.Text.Encoding.ASCII.GetString(data, 0, bytes);
                     }
                 }
 
-                string log = ip+" - - "+DateTime.Now.ToString("'['dd'/'MM'/'yyyy':'HH':'mm':'ss zz00']'");
+
+                    //while (line == null)
+                    //{
+                    //    try
+                    //    {
+                    //        int num;
+                    //        while ((num = sr.Read()) > 0)
+                    //        {
+                    //            line += ((char)num);
+                    //        }
+                    //    }
+                    //    catch
+                    //    {
+                    //    }
+                    //}
+
+                    string log = ip+" - - "+DateTime.Now.ToString("'['dd'/'MM'/'yyyy':'HH':'mm':'ss zz00']'");
                 string[] commands = line.Split(" ");
                 //GET commands
                 if (commands[0] == "GET")
@@ -239,8 +238,7 @@ public class locationserver
                         }
                     }
                 }
-
-                if (commands.Length == 1)
+                else if (commands.Length == 1)
                 {
                     name = commands[0];
                     name = name.Remove(name.Length - 2);
