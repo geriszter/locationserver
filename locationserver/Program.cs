@@ -7,7 +7,6 @@ using System.Threading;
 
 public class locationserver
 {
-    //https://codinginfinite.com/multi-threaded-tcp-server-core-example-csharp/
     static void Main(string[] args)
     {
         string LogFilePath = null;
@@ -99,17 +98,6 @@ public class locationserver
 
                 string line = null;
 
-                //Byte[] data = new Byte[1048576];
-                //Int32 bytes;
-                //while (line==null)
-                //{
-                //    bytes = socketStream.Read(data, 0, data.Length);
-                //    if (bytes > 0)
-                //    {
-                //        line += System.Text.Encoding.ASCII.GetString(data, 0, bytes);
-                //    }
-                //}
-
                 while (line == null)
                 {
                     try
@@ -123,8 +111,6 @@ public class locationserver
                     {
                     }
                 }
-
-
                 //while (line == null)
                 //{
                 //    try
