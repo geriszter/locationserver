@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.IO;
-using System.Collections.Generic;
 using System.Threading;
 
 public class locationserver
@@ -110,31 +110,37 @@ public class locationserver
                 //    }
                 //}
 
-                while (line==null)
+                while (line == null)
                 {
-                    while (sr.Peek()>-1)
+                    try
                     {
-                        line += (char)sr.Read();
+                        while (sr.Peek() > -1)
+                        {
+                            line += (char)sr.Read();
+                        }
+                    }
+                    catch
+                    {
                     }
                 }
 
 
-                    //while (line == null)
-                    //{
-                    //    try
-                    //    {
-                    //        int num;
-                    //        while ((num = sr.Read()) > 0)
-                    //        {
-                    //            line += ((char)num);
-                    //        }
-                    //    }
-                    //    catch
-                    //    {
-                    //    }
-                    //}
+                //while (line == null)
+                //{
+                //    try
+                //    {
+                //        int num;
+                //        while ((num = sr.Read()) > 0)
+                //        {
+                //            line += ((char)num);
+                //        }
+                //    }
+                //    catch
+                //    {
+                //    }
+                //}
 
-                    string log = ip+" - - "+DateTime.Now.ToString("'['dd'/'MM'/'yyyy':'HH':'mm':'ss zz00']'");
+                string log = ip+" - - "+DateTime.Now.ToString("'['dd'/'MM'/'yyyy':'HH':'mm':'ss zz00']'");
                 string[] commands = line.Split(" ");
                 //GET commands
                 if (commands[0] == "GET")
