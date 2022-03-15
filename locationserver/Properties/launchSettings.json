@@ -1,8 +1,7 @@
 {
   "profiles": {
     "locationserver": {
-      "commandName": "Project",
-      "commandLineArgs": "-f C:\\Users\\606497\\Documents\\locations.txt"
+      "commandName": "Project"
     }
   }
 }

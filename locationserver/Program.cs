@@ -93,8 +93,8 @@ public class locationserver
             {
 
                 int timeOut = 1000;
-                //socketStream.ReadTimeout = timeOut;
-                //socketStream.WriteTimeout = timeOut;
+                socketStream.ReadTimeout = timeOut;
+                socketStream.WriteTimeout = timeOut;
                 StreamReader sr = new StreamReader(socketStream);
                 string name = null;
                 string location = null;
