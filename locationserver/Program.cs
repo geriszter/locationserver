@@ -11,6 +11,7 @@ public class locationserver
     {
         string LogFilePath = null;
         string dbFilePath = null;
+        bool debug = false;
         for (int i = 0; i < args.Length; i++)
         {
             switch (args[i])
@@ -24,13 +25,17 @@ public class locationserver
                         dbFilePath = args[i+1];
                     }
                     break;
+                case "-d":
+                    debug = true;
+                    break;
             }
 
         }
-        runServer(LogFilePath, dbFilePath);
+        runServer(LogFilePath, dbFilePath,debug);
     }
-    static void runServer(string logPath, string savePath)
+    static void runServer(string logPath, string savePath,bool debug)
     {
+        
         TcpListener listener;
         Socket connection;
         Handler RequestHandler;
@@ -42,11 +47,12 @@ public class locationserver
             listener.Start(); 
 
             Console.WriteLine("Server started");
+            if (debug) { Console.WriteLine("Debugging mode is enabled");};
             while (true)
             {
                 connection = listener.AcceptSocket();
                 RequestHandler = new Handler();
-                new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath, savePath)).Start();
+                new Thread(() => RequestHandler.doRequest(connection,personLocation, logPath, savePath,debug)).Start();
             }
         }
         catch (Exception e)
@@ -76,13 +82,13 @@ public class locationserver
     {
         private static readonly object locker = new object();
 
-        public void doRequest(Socket connection, Dictionary<string, string> personLocation, string LogFilePath, string dblocation)
+        public void doRequest(Socket connection, Dictionary<string, string> personLocation, string LogFilePath, string dblocation,bool debug)
         {
 
             NetworkStream socketStream;
             socketStream = new NetworkStream(connection);
             string ip = ((IPEndPoint)(connection.RemoteEndPoint)).Address.ToString();
-            Console.WriteLine("New Connection "+ip);
+            Console.WriteLine("New Connection");
             try
             {
 
@@ -125,6 +131,9 @@ public class locationserver
                 //    {
                 //    }
                 //}
+
+                if (debug) { Console.WriteLine($"Server received:\"{line}\" request"); };
+
 
                 string log = ip+" - - "+DateTime.Now.ToString("'['dd'/'MM'/'yyyy':'HH':'mm':'ss zz00']'");
                 string[] commands = line.Split(" ");
@@ -273,6 +282,10 @@ public class locationserver
                 {
                     WriteLog(log, LogFilePath);
                 }
+
+
+                if (debug) { Console.WriteLine($"Server sending back:\"{response}\""); };
+
 
                 lock (locker)
                 {
