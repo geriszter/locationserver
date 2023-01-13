@@ -1,5 +1,5 @@
 # TCP C# Client
-This is a C# Windows console application. The client shall called location and it uses TCP sockets to communicate with a TCP server.
+This is a C# Windows console application. The client called location and it uses TCP sockets to communicate with a TCP server.
 The client and the server used for a simple student locating facility. The client simply use the Microsoft Command Prompt interface to run. 
 The client and server communicate using simplified forms of the internet whois (RFC3912), HTTP/0.9 (w3.org), HTTP/1.0 (RFC1945) and HTTP/1.1 (RFC2616) protocols.
 
